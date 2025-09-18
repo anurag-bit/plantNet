@@ -1,0 +1,119 @@
+{
+  "hardware": {
+    "gpu_type": "AMD MI300X",
+    "vram_gb": 192,
+    "vcpu_cores": 20,
+    "ram_gb": 240,
+    "comment": "High-end AMD MI300X configuration for maximum performance"
+  },
+  "data": {
+    "data_dir": "data",
+    "batch_size": 128,
+    "img_size": 384,
+    "num_workers": 20,
+    "pin_memory": true,
+    "persistent_workers": true,
+    "prefetch_factor": 4,
+    "comment": "Optimized for large VRAM and high CPU count"
+  },
+  "model": {
+    "model_type": "ensemble",
+    "architectures": [
+      {
+        "type": "resnet",
+        "name": "resnet101",
+        "pretrained": true,
+        "weight": 0.3
+      },
+      {
+        "type": "efficientnet",
+        "name": "efficientnet_b4",
+        "pretrained": true,
+        "weight": 0.25
+      },
+      {
+        "type": "vit",
+        "name": "vit_base_patch16_384",
+        "pretrained": true,
+        "weight": 0.25
+      },
+      {
+        "type": "swin",
+        "name": "swin_base_patch4_window12_384",
+        "pretrained": true,
+        "weight": 0.2
+      }
+    ],
+    "dropout_rate": 0.3,
+    "label_smoothing": 0.1
+  },
+  "training": {
+    "epochs": 200,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.05,
+    "optimizer": "adamw",
+    "scheduler": "cosine_warmup",
+    "warmup_epochs": 10,
+    "criterion": "crossentropy_smooth",
+    "use_class_weights": true,
+    "gradient_clip_norm": 1.0,
+    "mixed_precision": "bf16",
+    "compile_model": true,
+    "comment": "High precision training settings"
+  },
+  "augmentation": {
+    "mixup_alpha": 0.2,
+    "cutmix_alpha": 1.0,
+    "rand_augment": {
+      "num_ops": 9,
+      "magnitude": 15
+    },
+    "auto_augment": "rand-m9-mstd0.5-inc1",
+    "trivial_augment": true,
+    "random_erase": 0.25
+  },
+  "scheduler": {
+    "name": "cosine_warmup",
+    "warmup_epochs": 10,
+    "min_lr": 1e-6,
+    "cycle_momentum": true
+  },
+  "early_stopping": {
+    "enabled": true,
+    "patience": 25,
+    "min_delta": 0.0001,
+    "restore_best_weights": true
+  },
+  "inference": {
+    "tta_transforms": 8,
+    "multi_scale_sizes": [320, 384, 448],
+    "confidence_threshold": 0.7,
+    "top_k_predictions": 5,
+    "uncertainty_estimation": true
+  },
+  "output": {
+    "save_dir": "results_mi300x",
+    "experiment_name": "plant_disease_mi300x_ensemble",
+    "log_interval": 5,
+    "save_best": true,
+    "save_last": true,
+    "save_intermediate": [50, 100, 150],
+    "detailed_logging": true
+  },
+  "evaluation": {
+    "evaluate_on_test": true,
+    "visualize_predictions": true,
+    "num_prediction_samples": 64,
+    "generate_gradcam": true,
+    "detailed_metrics": true,
+    "cross_validation_folds": 5
+  },
+  "device": {
+    "device_type": "cuda",
+    "mixed_precision": "bf16",
+    "compile_model": true,
+    "channels_last": true,
+    "benchmark": true,
+    "deterministic": false
+  }
+}

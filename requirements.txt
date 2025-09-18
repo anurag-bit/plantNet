@@ -1,0 +1,48 @@
+# PlantNet: AMD MI300X Optimized Plant Disease Detection System
+# Core PyTorch and vision libraries
+torch>=2.8.0
+torchvision>=0.23.0
+torchaudio
+
+# Advanced model architectures and utilities
+timm>=1.0.11
+
+# Image processing and augmentation
+albumentations>=1.4.0
+opencv-python>=4.8.0
+pillow>=10.0.0
+
+# Scientific computing and data handling
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Visualization and plotting
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.17.0
+
+# Machine learning utilities
+scikit-learn>=1.3.0
+scipy>=1.11.0
+
+# Training and evaluation utilities
+tqdm>=4.65.0
+tensorboard>=2.13.0
+wandb>=0.16.0
+
+# Model interpretability
+grad-cam>=1.4.8
+captum>=0.6.0
+
+# System utilities
+psutil>=5.9.0
+GPUtil>=1.4.0
+
+# Development and testing
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Optional: For advanced optimizations
+# triton>=2.1.0  # For custom CUDA kernels (if available)
+# apex  # NVIDIA Apex for additional mixed precision support (if available)
