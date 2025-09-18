@@ -43,6 +43,10 @@ onnx>=1.15.0
 onnxruntime>=1.16.0
 safetensors>=0.4.0
 
+# Dataset download and management
+requests>=2.31.0
+kaggle>=1.5.16
+
 # System utilities
 psutil>=5.9.0
 GPUtil>=1.4.0

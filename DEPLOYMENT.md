@@ -1,31 +1,78 @@
 # Deployment and Model Management Documentation
 
-## Git LFS and HuggingFace Integration
+## Complete PlantNet Pipeline: Dataset to Deployment
 
 ### Quick Start Guide
 
-1. **Set up Git LFS** (one-time setup):
+1. **Set up the environment** (one-time setup):
    ```bash
+   # Install dependencies
+   pip install -r requirements.txt
+   
+   # Set up Git LFS
    git lfs install
    ```
 
-2. **Test the complete pipeline**:
+2. **Automated dataset setup**:
+   ```bash
+   # Option 1: Create sample dataset for testing
+   python setup_dataset.py --sample
+   
+   # Option 2: Download PlantVillage dataset automatically
+   python setup_dataset.py --source auto
+   
+   # Option 3: Use Kaggle API (requires kaggle.json credentials)
+   python setup_kaggle_dataset.py --use_kaggle
+   ```
+
+3. **Test the complete pipeline**:
    ```bash
    python test_deployment.py
    ```
 
-3. **Deploy your trained model**:
+4. **Complete deployment with dataset setup**:
    ```bash
    # Set your HuggingFace token
    export HF_TOKEN="your_huggingface_token_here"
    
-   # Run deployment pipeline
+   # Full pipeline: dataset → training → deployment
+   ./deploy_pipeline.sh --setup_dataset --sample_dataset
+   
+   # Or deploy existing model
    ./deploy_pipeline.sh --model_path results_mi300x/best_model.pth
    ```
 
 ### Available Scripts
 
-#### 🔧 `compile_models.py`
+#### 📊 `setup_dataset.py`
+Automated PlantVillage dataset download and setup with train/val/test splits.
+
+```bash
+# Create sample dataset for testing
+python setup_dataset.py --sample --data_dir data
+
+# Download from GitHub (automatic)
+python setup_dataset.py --source github --data_dir data
+
+# Verify existing dataset
+python setup_dataset.py --verify_only --data_dir data
+```
+
+#### � `setup_kaggle_dataset.py`
+Enhanced dataset setup with Kaggle API integration for official PlantVillage dataset.
+
+```bash
+# Download using Kaggle API (requires kaggle.json)
+python setup_kaggle_dataset.py --use_kaggle --data_dir data
+```
+
+**Kaggle Setup Instructions:**
+1. Go to [kaggle.com/account](https://www.kaggle.com/account)
+2. Click "Create New API Token"
+3. Save `kaggle.json` to `~/.kaggle/kaggle.json`
+4. Set permissions: `chmod 600 ~/.kaggle/kaggle.json`
+
+#### �🔧 `compile_models.py`
 Compiles trained models into multiple formats for deployment.
 
 ```bash
@@ -59,21 +106,27 @@ python version_manager.py --set_version 2.0.0
 ```
 
 #### 🚀 `deploy_pipeline.sh`
-Complete deployment pipeline that orchestrates all steps.
+Complete deployment pipeline that orchestrates all steps from dataset to deployment.
 
 ```bash
-# Full deployment
+# Full pipeline with dataset setup
+./deploy_pipeline.sh --setup_dataset --sample_dataset
+
+# Deploy existing model
 ./deploy_pipeline.sh --model_path best_model.pth --repo_name plantnet-ensemble
 
 # Dry run (test without actual deployment)
 ./deploy_pipeline.sh --model_path best_model.pth --dry_run
+
+# Skip training and deploy existing model
+./deploy_pipeline.sh --model_path models/best_model.pth --skip_training
 ```
 
 #### 🧪 `test_deployment.py`
-Tests all deployment components to ensure everything works correctly.
+Tests all deployment components including dataset setup to ensure everything works correctly.
 
 ```bash
-# Run all tests
+# Run all tests (including dataset automation)
 python test_deployment.py
 ```
 

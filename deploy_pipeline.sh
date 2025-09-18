@@ -3,7 +3,7 @@
 Complete PlantNet Model Deployment Pipeline
 ==========================================
 
-This script orchestrates the complete pipeline from model training to 
+This script orchestrates the complete pipeline from dataset setup to 
 HuggingFace Hub deployment with proper versioning and Git LFS tracking.
 
 Usage:
@@ -15,6 +15,9 @@ Options:
     --repo_name       HuggingFace repository name (default: plantnet-ensemble)
     --private         Create private HF repository
     --dry_run         Test run without actual deployment
+    --setup_dataset   Set up dataset before training (optional)
+    --sample_dataset  Use sample dataset for testing
+    --skip_training   Skip training step (deploy existing model)
 """
 
 set -e  # Exit on any error
@@ -25,6 +28,9 @@ VERSION_TYPE="patch"
 REPO_NAME="plantnet-ensemble"
 PRIVATE_REPO=false
 DRY_RUN=false
+SETUP_DATASET=false
+SAMPLE_DATASET=false
+SKIP_TRAINING=false
 HF_TOKEN="${HF_TOKEN}"
 
 # Colors for output
@@ -80,6 +86,18 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
+        --setup_dataset)
+            SETUP_DATASET=true
+            shift
+            ;;
+        --sample_dataset)
+            SAMPLE_DATASET=true
+            shift
+            ;;
+        --skip_training)
+            SKIP_TRAINING=true
+            shift
+            ;;
         -h|--help)
             echo "PlantNet Model Deployment Pipeline"
             echo "Usage: $0 [options]"
@@ -90,6 +108,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --repo_name       HuggingFace repository name (default: plantnet-ensemble)"
             echo "  --private         Create private HF repository"
             echo "  --dry_run         Test run without actual deployment"
+            echo "  --setup_dataset   Set up dataset before training"
+            echo "  --sample_dataset  Use sample dataset for testing"
+            echo "  --skip_training   Skip training step (deploy existing model)"
             echo "  -h, --help        Show this help message"
             exit 0
             ;;
@@ -102,12 +123,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validation
-if [[ -z "$MODEL_PATH" ]]; then
-    print_error "Model path is required. Use --model_path to specify."
-    exit 1
+if [[ "$SKIP_TRAINING" != true && -z "$MODEL_PATH" ]]; then
+    print_warning "Model path not provided. Will train new model if dataset is available."
+    if [[ "$SETUP_DATASET" != true && ! -d "data/train" ]]; then
+        print_error "No trained model and no dataset. Use --setup_dataset or provide --model_path"
+        exit 1
+    fi
 fi
 
-if [[ ! -f "$MODEL_PATH" ]]; then
+if [[ -n "$MODEL_PATH" && ! -f "$MODEL_PATH" ]]; then
     print_error "Model file not found: $MODEL_PATH"
     exit 1
 fi
@@ -126,35 +150,156 @@ main() {
     echo "  Repository: $REPO_NAME"
     echo "  Private Repo: $PRIVATE_REPO"
     echo "  Dry Run: $DRY_RUN"
+    echo "  Setup Dataset: $SETUP_DATASET"
+    echo "  Sample Dataset: $SAMPLE_DATASET"
+    echo "  Skip Training: $SKIP_TRAINING"
     echo ""
+    
+    # Step 0: Dataset setup (if requested)
+    if [[ "$SETUP_DATASET" == "true" ]]; then
+        print_header "Step 0: Dataset Setup"
+        setup_dataset
+    fi
     
     # Step 1: Validate environment
     print_header "Step 1: Environment Validation"
     validate_environment
     
-    # Step 2: Compile models
-    print_header "Step 2: Model Compilation"
+    # Step 2: Model training (if needed)
+    if [[ "$SKIP_TRAINING" != "true" && -z "$MODEL_PATH" ]]; then
+        print_header "Step 2: Model Training"
+        train_model
+    fi
+    
+    # Step 3: Compile models
+    print_header "Step 3: Model Compilation"
     compile_models
     
-    # Step 3: Version management
-    print_header "Step 3: Version Management"
+    # Step 4: Version management
+    print_header "Step 4: Version Management"
     manage_version
     
-    # Step 4: Git operations
-    print_header "Step 4: Git Operations"
+    # Step 5: Git operations
+    print_header "Step 5: Git Operations"
     handle_git_operations
     
-    # Step 5: HuggingFace upload
+    # Step 6: HuggingFace upload
     if [[ "$DRY_RUN" == "false" ]]; then
-        print_header "Step 5: HuggingFace Upload"
+        print_header "Step 6: HuggingFace Upload"
         upload_to_huggingface
     else
         print_info "Skipping HuggingFace upload (dry run mode)"
     fi
     
-    # Step 6: Cleanup and summary
-    print_header "Step 6: Deployment Summary"
+    # Step 7: Cleanup and summary
+    print_header "Step 7: Deployment Summary"
     deployment_summary
+}
+
+# Dataset setup function
+setup_dataset() {
+    print_info "Setting up PlantVillage dataset..."
+    
+    if [[ "$SAMPLE_DATASET" == "true" ]]; then
+        print_info "Creating sample dataset for testing..."
+        if python setup_dataset.py --sample --data_dir data; then
+            print_success "Sample dataset created successfully"
+        else
+            print_error "Sample dataset creation failed"
+            exit 1
+        fi
+    else
+        print_info "Attempting to download PlantVillage dataset..."
+        # Try automatic download first
+        if python setup_dataset.py --source auto --data_dir data; then
+            print_success "Dataset downloaded and organized successfully"
+        else
+            print_warning "Automatic download failed. Trying Kaggle..."
+            # Try Kaggle download
+            if python setup_kaggle_dataset.py --use_kaggle --data_dir data; then
+                print_success "Dataset downloaded from Kaggle successfully"
+                # Organize the dataset
+                if python setup_dataset.py --verify_only --data_dir data; then
+                    print_success "Dataset verified successfully"
+                else
+                    print_error "Dataset verification failed"
+                    exit 1
+                fi
+            else
+                print_warning "Kaggle download also failed. Creating sample dataset..."
+                if python setup_dataset.py --sample --data_dir data; then
+                    print_success "Sample dataset created as fallback"
+                else
+                    print_error "All dataset setup methods failed"
+                    exit 1
+                fi
+            fi
+        fi
+    fi
+    
+    # Verify dataset structure
+    if [[ -d "data/train" && -d "data/val" && -d "data/test" ]]; then
+        train_count=$(find data/train -name "*.jpg" -o -name "*.png" | wc -l)
+        val_count=$(find data/val -name "*.jpg" -o -name "*.png" | wc -l)
+        test_count=$(find data/test -name "*.jpg" -o -name "*.png" | wc -l)
+        
+        print_success "Dataset structure verified:"
+        echo "  Train images: $train_count"
+        echo "  Validation images: $val_count"
+        echo "  Test images: $test_count"
+    else
+        print_error "Dataset structure is incomplete"
+        exit 1
+    fi
+}
+
+# Model training function
+train_model() {
+    print_info "Training PlantNet model..."
+    
+    # Check if training script exists
+    if [[ ! -f "train_mi300x.py" ]]; then
+        print_error "Training script 'train_mi300x.py' not found"
+        exit 1
+    fi
+    
+    # Check if dataset exists
+    if [[ ! -d "data/train" ]]; then
+        print_error "Training data not found. Run with --setup_dataset first"
+        exit 1
+    fi
+    
+    print_info "Starting model training..."
+    
+    # Run training with error handling
+    if python train_mi300x.py \
+        --data_dir data \
+        --epochs 10 \
+        --batch_size 32 \
+        --learning_rate 0.001 \
+        --output_dir models; then
+        
+        print_success "Model training completed successfully"
+        
+        # Find the trained model
+        if [[ -f "models/best_model.pth" ]]; then
+            MODEL_PATH="models/best_model.pth"
+            print_success "Trained model found: $MODEL_PATH"
+        else
+            # Look for any .pth files in models directory
+            model_files=(models/*.pth)
+            if [[ -f "${model_files[0]}" ]]; then
+                MODEL_PATH="${model_files[0]}"
+                print_success "Trained model found: $MODEL_PATH"
+            else
+                print_error "No trained model found after training"
+                exit 1
+            fi
+        fi
+    else
+        print_error "Model training failed"
+        exit 1
+    fi
 }
 
 validate_environment() {

@@ -3,19 +3,86 @@
 Complete Model Deployment and Upload Test Script
 ===============================================
 
-This script demonstrates the complete pipeline for compiling and uploading
-PlantNet models to HuggingFace Hub with proper Git LFS tracking.
+This script demonstrates the complete pipeline for dataset setup,
+model compilation, and uploading PlantNet models to HuggingFace Hub 
+with proper Git LFS tracking.
 """
 
 import os
 import sys
 import json
 import tempfile
+import subprocess
 from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
+
+
+def test_dataset_setup():
+    """Test the automated dataset setup functionality."""
+    print("🧪 Testing dataset setup...")
+    
+    # Test sample dataset creation
+    try:
+        from setup_dataset import DatasetDownloader
+        
+        # Create temporary test directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_data_dir = Path(temp_dir) / "test_data"
+            
+            print(f"📁 Testing dataset setup in: {test_data_dir}")
+            
+            # Initialize downloader
+            downloader = DatasetDownloader(data_dir=str(test_data_dir))
+            
+            # Test sample dataset creation
+            print("🔄 Creating sample dataset...")
+            success = downloader.setup_dataset(create_sample=True)
+            
+            if success:
+                print("✅ Sample dataset created successfully")
+                
+                # Verify structure
+                if downloader.verify_dataset():
+                    print("✅ Dataset verification passed")
+                    return True
+                else:
+                    print("❌ Dataset verification failed")
+                    return False
+            else:
+                print("❌ Sample dataset creation failed")
+                return False
+                
+    except Exception as e:
+        print(f"❌ Dataset setup test failed: {e}")
+        return False
+
+
+def test_kaggle_setup():
+    """Test Kaggle dataset setup (without actual download)."""
+    print("🧪 Testing Kaggle integration...")
+    
+    try:
+        from setup_kaggle_dataset import KaggleDatasetSetup
+        
+        # Test Kaggle setup class initialization
+        kaggle_setup = KaggleDatasetSetup(data_dir="test_data")
+        print("✅ Kaggle setup class initialized")
+        
+        # Test credential check (should fail without actual credentials)
+        has_credentials = kaggle_setup.check_kaggle_setup()
+        if has_credentials:
+            print("✅ Kaggle credentials found")
+        else:
+            print("ℹ️ Kaggle credentials not configured (expected for testing)")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Kaggle setup test failed: {e}")
+        return False
 
 
 def create_test_model():
@@ -314,6 +381,8 @@ def main():
     print("=" * 50)
     
     tests = [
+        ("Dataset Setup", test_dataset_setup),
+        ("Kaggle Integration", test_kaggle_setup),
         ("Git LFS Setup", test_git_lfs_setup),
         ("Model Compilation", test_model_compilation),
         ("Version Management", test_version_management),
@@ -351,10 +420,11 @@ def main():
     if passed == total:
         print("🎉 All tests passed! Your deployment pipeline is ready.")
         print("\nNext steps:")
-        print("1. Train your model: python train_mi300x.py")
-        print("2. Deploy your model: ./deploy_pipeline.sh --model_path results_mi300x/best_model.pth")
+        print("1. Run dataset setup: python setup_dataset.py --sample")
+        print("2. Train a model: python train_mi300x.py")
+        print("3. Deploy pipeline: ./deploy_pipeline.sh --model_path models/best_model.pth")
     else:
-        print("⚠️ Some tests failed. Please fix the issues before deploying.")
+        print("⚠️ Some tests failed. Please fix the issues before deployment.")
         print("\nTroubleshooting:")
         print("- Install missing dependencies: pip install -r requirements.txt")
         print("- Set up Git LFS: git lfs install")
