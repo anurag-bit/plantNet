@@ -137,9 +137,62 @@ class MI300XConfig:
     
     def _update_from_dict(self, config_dict: dict):
         """Update configuration from dictionary."""
+        # Handle nested configuration structure
+        if 'data' in config_dict:
+            data_config = config_dict['data']
+            for key, value in data_config.items():
+                if key != 'comment' and hasattr(self, key):
+                    setattr(self, key, value)
+        
+        if 'model' in config_dict:
+            model_config = config_dict['model']
+            for key, value in model_config.items():
+                if key != 'comment' and hasattr(self, key):
+                    setattr(self, key, value)
+        
+        if 'training' in config_dict:
+            training_config = config_dict['training']
+            for key, value in training_config.items():
+                if key != 'comment' and hasattr(self, key):
+                    setattr(self, key, value)
+        
+        if 'early_stopping' in config_dict:
+            es_config = config_dict['early_stopping']
+            if 'enabled' in es_config:
+                self.early_stopping = es_config['enabled']
+            if 'patience' in es_config:
+                self.early_stopping_patience = es_config['patience']
+            if 'min_delta' in es_config:
+                self.early_stopping_min_delta = es_config['min_delta']
+        
+        if 'device' in config_dict:
+            device_config = config_dict['device']
+            for key, value in device_config.items():
+                if key == 'device_type':
+                    self.device = value
+                elif key != 'comment' and hasattr(self, key):
+                    setattr(self, key, value)
+        
+        if 'output' in config_dict:
+            output_config = config_dict['output']
+            for key, value in output_config.items():
+                if key != 'comment' and hasattr(self, key):
+                    setattr(self, key, value)
+        
+        if 'augmentation' in config_dict:
+            aug_config = config_dict['augmentation']
+            if 'mixup_alpha' in aug_config:
+                self.mixup_alpha = aug_config['mixup_alpha']
+            if 'cutmix_alpha' in aug_config:
+                self.cutmix_alpha = aug_config['cutmix_alpha']
+            if 'random_erase' in aug_config:
+                self.random_erase = aug_config['random_erase']
+        
+        # Handle flat structure as well
         for key, value in config_dict.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+            if key not in ['data', 'model', 'training', 'early_stopping', 'device', 'output', 'augmentation', 'hardware', 'scheduler', 'inference', 'evaluation']:
+                if hasattr(self, key):
+                    setattr(self, key, value)
     
     def _setup_device(self):
         """Setup device with optimizations."""
@@ -211,7 +264,7 @@ class MI300XConfig:
                         print(f"  {key}: {value}")
         
         print("\n" + "="*80)
-        print(f"🎯 Expected Training Time: ~{self.epochs * 2.5 / 60:.1f} hours")
+        print(f"🎯 Expected Training Time: ~{self.epochs * 0.8 / 60:.1f} hours")
         print(f"📈 Expected Memory Usage: ~{self.batch_size * 3 * self.img_size**2 * 4 / 1e9:.1f} GB")
         print("="*80 + "\n")
 
@@ -266,7 +319,11 @@ def main():
     # Check data directory
     if not os.path.exists(config.data_dir):
         print(f"❌ Error: Data directory '{config.data_dir}' not found!")
-        print("Please organize your PlantVillage dataset as described in README.md")
+        print("\n🚀 To set up the dataset automatically, run:")
+        print("   python setup_dataset.py --sample  # For quick testing")
+        print("   python setup_dataset.py --source auto  # For full dataset")
+        print("   python setup_kaggle_dataset.py --use_kaggle  # For Kaggle dataset")
+        print("\nOr organize your PlantVillage dataset as described in README.md")
         return 1
     
     try:
@@ -380,7 +437,10 @@ def main():
         
         # Start training
         print("🚀 Starting MI300X optimized training...")
-        print(f"⏱️ Estimated completion: {time.strftime('%H:%M:%S', time.localtime(time.time() + config.epochs * 150))}")
+        estimated_time_per_epoch = 45 if config.model_type == "ensemble" else 20  # seconds
+        estimated_total_time = config.epochs * estimated_time_per_epoch
+        completion_time = time.time() + estimated_total_time
+        print(f"⏱️ Estimated completion: {time.strftime('%H:%M:%S', time.localtime(completion_time))} ({estimated_total_time/3600:.1f}h total)")
         
         start_time = time.time()
         history = trainer.train(
