@@ -454,10 +454,44 @@ class EnsembleModel(nn.Module):
             self.weights = torch.tensor(weights, dtype=torch.float32)
             self.weights = self.weights / self.weights.sum()  # Normalize
         
-        self.num_classes = models[0].classifier[-1].out_features if hasattr(models[0], 'classifier') else models[0].fc.out_features
+        self.num_classes = self._get_num_classes(models[0])
         
         # Register weights as buffer so they move with model
         self.register_buffer('model_weights', self.weights)
+    
+    def _get_num_classes(self, model):
+        """Get number of classes from a model, handling different architectures."""
+        # Handle custom models with classifier
+        if hasattr(model, 'classifier'):
+            if isinstance(model.classifier, nn.Sequential):
+                # Find the last Linear layer
+                for layer in reversed(model.classifier):
+                    if isinstance(layer, nn.Linear):
+                        return layer.out_features
+            elif isinstance(model.classifier, nn.Linear):
+                return model.classifier.out_features
+        
+        # Handle models with fc (like ResNet backbone)
+        if hasattr(model, 'fc'):
+            if isinstance(model.fc, nn.Sequential):
+                # Find the last Linear layer
+                for layer in reversed(model.fc):
+                    if isinstance(layer, nn.Linear):
+                        return layer.out_features
+            elif isinstance(model.fc, nn.Linear):
+                return model.fc.out_features
+        
+        # Handle models with backbone.fc (like our PlantDiseaseResNet)
+        if hasattr(model, 'backbone') and hasattr(model.backbone, 'fc'):
+            if isinstance(model.backbone.fc, nn.Sequential):
+                for layer in reversed(model.backbone.fc):
+                    if isinstance(layer, nn.Linear):
+                        return layer.out_features
+            elif isinstance(model.backbone.fc, nn.Linear):
+                return model.backbone.fc.out_features
+        
+        # Default fallback
+        return 38  # PlantVillage dataset classes
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through ensemble."""
