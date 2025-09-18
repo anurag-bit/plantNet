@@ -9,6 +9,9 @@
    # Install dependencies
    pip install -r requirements.txt
    
+   # If you encounter NumPy compatibility issues, run:
+   python fix_numpy_compatibility.py
+   
    # Set up Git LFS
    git lfs install
    ```

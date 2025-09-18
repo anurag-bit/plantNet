@@ -14,6 +14,49 @@ import json
 import warnings
 
 
+class EarlyStopping:
+    """Early stopping utility to prevent overfitting."""
+    
+    def __init__(self, patience: int = 7, min_delta: float = 0, restore_best_weights: bool = True):
+        """
+        Args:
+            patience (int): How many epochs to wait after last time validation loss improved
+            min_delta (float): Minimum change in monitored quantity to qualify as improvement
+            restore_best_weights (bool): Whether to restore model weights from best epoch
+        """
+        self.patience = patience
+        self.min_delta = min_delta
+        self.restore_best_weights = restore_best_weights
+        self.best_loss = float('inf')
+        self.counter = 0
+        self.best_weights = None
+    
+    def __call__(self, val_loss: float, model: nn.Module) -> bool:
+        """
+        Check if training should stop.
+        
+        Args:
+            val_loss (float): Current validation loss
+            model (nn.Module): Model to potentially save weights from
+            
+        Returns:
+            bool: True if training should stop
+        """
+        if val_loss < self.best_loss - self.min_delta:
+            self.best_loss = val_loss
+            self.counter = 0
+            if self.restore_best_weights:
+                self.best_weights = {k: v.clone().detach() for k, v in model.state_dict().items()}
+        else:
+            self.counter += 1
+        
+        if self.counter >= self.patience:
+            if self.restore_best_weights and self.best_weights:
+                model.load_state_dict(self.best_weights)
+            return True
+        return False
+
+
 class CosineWarmupScheduler:
     """Cosine annealing scheduler with warmup."""
     

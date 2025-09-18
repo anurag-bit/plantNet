@@ -132,7 +132,7 @@ def create_test_model():
             'model_state_dict': model.state_dict(),
             'class_names': class_names,
             'config': {
-                'model_type': 'test_cnn',
+                'model_type': 'resnet50',  # Use valid model type
                 'img_size': 224,
                 'num_classes': len(class_names)
             },

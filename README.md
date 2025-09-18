@@ -41,8 +41,11 @@ conda activate plantnet
 # Install PyTorch for AMD GPU
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
 
-# Install additional dependencies
+# Install dependencies (this will install NumPy 2.x for compatibility)
 pip install -r requirements.txt
+
+# If you encounter compatibility issues, run the fix script:
+python fix_numpy_compatibility.py
 ```
 
 ### 2. Dependencies
