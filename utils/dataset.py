@@ -109,7 +109,7 @@ def create_data_loaders(data_dir: str, batch_size: int = 32, img_size: int = 224
         Tuple of (train_loader, val_loader, test_loader, class_names)
     """
     train_dir = os.path.join(data_dir, 'train')
-    val_dir = os.path.join(data_dir, 'validation')
+    val_dir = os.path.join(data_dir, 'val')
     test_dir = os.path.join(data_dir, 'test')
     
     # Get transforms

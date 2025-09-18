@@ -309,6 +309,7 @@ def main():
         config.batch_size = 32
         config.experiment_name = f"test_run_{int(time.time())}"
         config.experiment_dir = os.path.join(config.save_dir, config.experiment_name)
+        os.makedirs(config.experiment_dir, exist_ok=True)
     
     # Print configuration
     config.print_config()
