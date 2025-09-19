@@ -15,6 +15,10 @@ Features:
 - Multi-scale training and validation
 """
 
+# Disable PyTorch JIT compilation to avoid tensor dimension issues
+import os
+os.environ['TORCH_COMPILE_DISABLE'] = '1'
+
 import argparse
 import json
 import os
@@ -371,6 +375,8 @@ def main():
         if config.compile_model and hasattr(torch, 'compile'):
             print("🔧 Compiling model for optimization...")
             model = torch.compile(model, mode='max-autotune')
+        else:
+            print("🔧 Model compilation disabled for stability")
         
         print(f"✅ Model created with {count_parameters(model):,} parameters")
         
