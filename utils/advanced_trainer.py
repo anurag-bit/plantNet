@@ -361,10 +361,11 @@ class AdvancedTrainer:
             total += target.size(0)
             
             if use_mixup or use_cutmix:
-                correct += (lam * predicted.eq(target_a.data).cpu().sum().float() + 
-                           (1 - lam) * predicted.eq(target_b.data).cpu().sum().float())
+                mixup_correct = (lam * predicted.eq(target_a.data).cpu().sum().float() + 
+                               (1 - lam) * predicted.eq(target_b.data).cpu().sum().float())
+                correct += mixup_correct.item()
             else:
-                correct += predicted.eq(target.data).cpu().sum()
+                correct += predicted.eq(target.data).cpu().sum().item()
             
             if batch_idx % self.log_interval == 0:
                 current_lr = self.optimizer.param_groups[0]['lr']
