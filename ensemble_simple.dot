@@ -1,0 +1,64 @@
+digraph PlantNetEnsembleSimplified {
+    // Graph settings
+    rankdir=TB;
+    bgcolor="white";
+    fontname="Arial";
+    fontsize=12;
+    labelloc="t";
+    label="PlantNet: 4-Model Ensemble Architecture Overview";
+    
+    // Node styles
+    node [fontname="Arial", fontsize=10, shape=box, style=rounded];
+    
+    // Input
+    input [label="Input Image\n224×224×3", shape=box3d, fillcolor="lightblue", style="filled"];
+    
+    // Preprocessing
+    preprocess [label="Data Preprocessing\nNormalization + Augmentation", fillcolor="lightyellow", style="filled"];
+    
+    // Model branches (simplified)
+    resnet [label="ResNet152\n60.2M parameters\nResidual Learning\nDeep CNN", fillcolor="lightcoral", style="filled", shape=box];
+    efficientnet [label="EfficientNetB4\n19.3M parameters\nCompound Scaling\nEfficient CNN", fillcolor="lightgreen", style="filled", shape=box];
+    vit [label="Vision Transformer\n86.6M parameters\nSelf-Attention\nPatch-based", fillcolor="lightsalmon", style="filled", shape=box];
+    swin [label="Swin Transformer\n87.8M parameters\nHierarchical Attention\nWindowed MSA", fillcolor="plum", style="filled", shape=box];
+    
+    // Feature extraction
+    resnet_features [label="CNN Features\n2048-dim", fillcolor="mistyrose", style="filled"];
+    eff_features [label="Efficient Features\n1792-dim", fillcolor="palegreen", style="filled"];
+    vit_features [label="Global Features\n768-dim", fillcolor="peachpuff", style="filled"];
+    swin_features [label="Hierarchical Features\n768-dim", fillcolor="thistle", style="filled"];
+    
+    // Fusion
+    fusion [label="Adaptive Fusion\nLearnable Weights\nw1×ResNet + w2×EfficientNet\n+ w3×ViT + w4×Swin", 
+            shape=hexagon, fillcolor="gold", style="filled"];
+    
+    // Output
+    output [label="Final Prediction\n38 Disease Classes\nConfidence Scores", 
+            shape=box3d, fillcolor="lightgreen", style="filled"];
+    
+    // Connections
+    input -> preprocess;
+    
+    preprocess -> resnet [color="red", penwidth=2];
+    preprocess -> efficientnet [color="green", penwidth=2];
+    preprocess -> vit [color="orange", penwidth=2];
+    preprocess -> swin [color="purple", penwidth=2];
+    
+    resnet -> resnet_features [color="red"];
+    efficientnet -> eff_features [color="green"];
+    vit -> vit_features [color="orange"];
+    swin -> swin_features [color="purple"];
+    
+    resnet_features -> fusion [color="red", penwidth=2];
+    eff_features -> fusion [color="green", penwidth=2];
+    vit_features -> fusion [color="orange", penwidth=2];
+    swin_features -> fusion [color="purple", penwidth=2];
+    
+    fusion -> output [penwidth=3, color="blue"];
+    
+    // Stats box
+    stats [label="Total Parameters: 235,985,048\nValidation Accuracy: 95%+\nGPU Memory: 172GB\nTraining: 4/5 epochs complete", 
+           shape=note, fillcolor="lightyellow", style="filled"];
+    
+    {rank=same; stats}
+}

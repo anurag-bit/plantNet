@@ -1,0 +1,181 @@
+digraph PlantNetEnsemble {
+    // Graph settings
+    rankdir=TB;
+    bgcolor="white";
+    fontname="Arial";
+    fontsize=12;
+    labelloc="t";
+    label="PlantNet: 4-Model Ensemble Architecture\n235,985,048 Parameters | 38 Disease Classes";
+    
+    // Node styles
+    node [fontname="Arial", fontsize=10, shape=box, style=rounded];
+    edge [fontname="Arial", fontsize=8];
+    
+    // Input layer
+    input [label="Input Image\n224×224×3\nRGB Channels\nBF16 Precision", 
+           shape=box3d, fillcolor="lightblue", style="filled,rounded",
+           fontsize=11, fontname="Arial Bold"];
+    
+    // Data preprocessing
+    preprocess [label="Data Preprocessing\n• Normalization: ImageNet stats\n• Augmentation: Advanced transforms\n• Memory: channels_last format", 
+                fillcolor="lightyellow", style="filled,rounded"];
+    
+    // Individual model branches
+    subgraph cluster_models {
+        label="Parallel Model Processing";
+        style=dashed;
+        fontname="Arial Bold";
+        fontsize=12;
+        
+        // ResNet152 branch
+        subgraph cluster_resnet {
+            label="ResNet152 Branch";
+            style=rounded;
+            fillcolor="lightcoral";
+            color="red";
+            fontname="Arial Bold";
+            
+            resnet_input [label="Input\n224×224×3", fillcolor="white", style="filled"];
+            resnet_conv1 [label="Conv1\n7×7, stride=2\n64 filters", fillcolor="mistyrose", style="filled"];
+            resnet_pool1 [label="MaxPool\n3×3, stride=2", fillcolor="mistyrose", style="filled"];
+            
+            resnet_layer1 [label="Layer 1\n3 Bottleneck blocks\n256 channels", fillcolor="lightcoral", style="filled"];
+            resnet_layer2 [label="Layer 2\n8 Bottleneck blocks\n512 channels", fillcolor="lightcoral", style="filled"];
+            resnet_layer3 [label="Layer 3\n36 Bottleneck blocks\n1024 channels", fillcolor="lightcoral", style="filled"];
+            resnet_layer4 [label="Layer 4\n3 Bottleneck blocks\n2048 channels", fillcolor="lightcoral", style="filled"];
+            
+            resnet_avgpool [label="AdaptiveAvgPool2d\n(1,1)", fillcolor="mistyrose", style="filled"];
+            resnet_fc [label="Linear\n2048 → 38\nDropout: 0.5", fillcolor="lightcoral", style="filled"];
+            resnet_output [label="ResNet Output\n38 classes", fillcolor="white", style="filled"];
+            
+            resnet_input -> resnet_conv1 -> resnet_pool1 -> resnet_layer1 -> resnet_layer2 -> resnet_layer3 -> resnet_layer4 -> resnet_avgpool -> resnet_fc -> resnet_output;
+        }
+        
+        // EfficientNetB4 branch
+        subgraph cluster_efficientnet {
+            label="EfficientNetB4 Branch";
+            style=rounded;
+            fillcolor="lightgreen";
+            color="green";
+            fontname="Arial Bold";
+            
+            eff_input [label="Input\n224×224×3", fillcolor="white", style="filled"];
+            eff_stem [label="Stem Conv\n3×3, stride=2\n48 filters", fillcolor="lightgreen", style="filled"];
+            
+            eff_block1 [label="MBConv Block 1\nExpansion: 1\nFilters: 24", fillcolor="palegreen", style="filled"];
+            eff_block2 [label="MBConv Block 2\nExpansion: 6\nFilters: 32", fillcolor="palegreen", style="filled"];
+            eff_block3 [label="MBConv Block 3\nExpansion: 6\nFilters: 56", fillcolor="palegreen", style="filled"];
+            eff_block4 [label="MBConv Block 4\nExpansion: 6\nFilters: 112", fillcolor="palegreen", style="filled"];
+            eff_block5 [label="MBConv Block 5\nExpansion: 6\nFilters: 160", fillcolor="palegreen", style="filled"];
+            eff_block6 [label="MBConv Block 6\nExpansion: 6\nFilters: 272", fillcolor="palegreen", style="filled"];
+            eff_block7 [label="MBConv Block 7\nExpansion: 6\nFilters: 448", fillcolor="palegreen", style="filled"];
+            
+            eff_head [label="Head Conv\n1×1\n1792 filters", fillcolor="lightgreen", style="filled"];
+            eff_avgpool [label="AdaptiveAvgPool2d\n(1,1)", fillcolor="palegreen", style="filled"];
+            eff_dropout [label="Dropout\n0.4", fillcolor="lightgreen", style="filled"];
+            eff_fc [label="Linear\n1792 → 38", fillcolor="lightgreen", style="filled"];
+            eff_output [label="EfficientNet Output\n38 classes", fillcolor="white", style="filled"];
+            
+            eff_input -> eff_stem -> eff_block1 -> eff_block2 -> eff_block3 -> eff_block4 -> eff_block5 -> eff_block6 -> eff_block7 -> eff_head -> eff_avgpool -> eff_dropout -> eff_fc -> eff_output;
+        }
+        
+        // Vision Transformer branch
+        subgraph cluster_vit {
+            label="Vision Transformer (ViT-B/16)";
+            style=rounded;
+            fillcolor="lightsalmon";
+            color="orange";
+            fontname="Arial Bold";
+            
+            vit_input [label="Input\n224×224×3", fillcolor="white", style="filled"];
+            vit_patch [label="Patch Embedding\n16×16 patches\n196 patches\n768-dim", fillcolor="lightsalmon", style="filled"];
+            vit_pos [label="Position Embedding\n+ Class Token\n197×768", fillcolor="peachpuff", style="filled"];
+            
+            vit_encoder1 [label="Transformer Block 1\nMulti-Head Attention\n12 heads, 64-dim each", fillcolor="lightsalmon", style="filled"];
+            vit_encoder2 [label="Transformer Block 2\nMulti-Head Attention\n12 heads, 64-dim each", fillcolor="lightsalmon", style="filled"];
+            vit_encoder_dots [label="...\n10 more blocks", fillcolor="peachpuff", style="filled"];
+            vit_encoder12 [label="Transformer Block 12\nMulti-Head Attention\n12 heads, 64-dim each", fillcolor="lightsalmon", style="filled"];
+            
+            vit_norm [label="LayerNorm", fillcolor="peachpuff", style="filled"];
+            vit_head [label="Classification Head\n768 → 38", fillcolor="lightsalmon", style="filled"];
+            vit_output [label="ViT Output\n38 classes", fillcolor="white", style="filled"];
+            
+            vit_input -> vit_patch -> vit_pos -> vit_encoder1 -> vit_encoder2 -> vit_encoder_dots -> vit_encoder12 -> vit_norm -> vit_head -> vit_output;
+        }
+        
+        // Swin Transformer branch
+        subgraph cluster_swin {
+            label="Swin Transformer";
+            style=rounded;
+            fillcolor="plum";
+            color="purple";
+            fontname="Arial Bold";
+            
+            swin_input [label="Input\n224×224×3", fillcolor="white", style="filled"];
+            swin_patch [label="Patch Partition\n4×4 patches\n48-dim features", fillcolor="plum", style="filled"];
+            swin_embed [label="Linear Embedding\n48 → 96", fillcolor="thistle", style="filled"];
+            
+            swin_stage1 [label="Stage 1\n2 Swin Blocks\nW-MSA + SW-MSA\n96-dim", fillcolor="plum", style="filled"];
+            swin_merge1 [label="Patch Merging\n96 → 192", fillcolor="thistle", style="filled"];
+            
+            swin_stage2 [label="Stage 2\n2 Swin Blocks\nW-MSA + SW-MSA\n192-dim", fillcolor="plum", style="filled"];
+            swin_merge2 [label="Patch Merging\n192 → 384", fillcolor="thistle", style="filled"];
+            
+            swin_stage3 [label="Stage 3\n6 Swin Blocks\nW-MSA + SW-MSA\n384-dim", fillcolor="plum", style="filled"];
+            swin_merge3 [label="Patch Merging\n384 → 768", fillcolor="thistle", style="filled"];
+            
+            swin_stage4 [label="Stage 4\n2 Swin Blocks\nW-MSA + SW-MSA\n768-dim", fillcolor="plum", style="filled"];
+            
+            swin_norm [label="LayerNorm", fillcolor="thistle", style="filled"];
+            swin_avgpool [label="AdaptiveAvgPool1d", fillcolor="thistle", style="filled"];
+            swin_head [label="Linear Head\n768 → 38", fillcolor="plum", style="filled"];
+            swin_output [label="Swin Output\n38 classes", fillcolor="white", style="filled"];
+            
+            swin_input -> swin_patch -> swin_embed -> swin_stage1 -> swin_merge1 -> swin_stage2 -> swin_merge2 -> swin_stage3 -> swin_merge3 -> swin_stage4 -> swin_norm -> swin_avgpool -> swin_head -> swin_output;
+        }
+    }
+    
+    // Ensemble fusion layer
+    fusion [label="Ensemble Fusion Layer\n• Adaptive Weighted Averaging\n• Learnable Weights: [w1, w2, w3, w4]\n• Softmax Normalization\n• Element-wise Multiplication", 
+            shape=hexagon, fillcolor="gold", style="filled,rounded",
+            fontsize=11, fontname="Arial Bold"];
+    
+    // Final output
+    final_output [label="Final Prediction\n38 Disease Classes\n+ Confidence Scores\nSoftmax Activation", 
+                  shape=box3d, fillcolor="lightgreen", style="filled,rounded",
+                  fontsize=11, fontname="Arial Bold"];
+    
+    // Performance metrics box
+    metrics [label="Performance Metrics\n• Parameters: 235,985,048\n• Validation Accuracy: 95%+\n• Training Time: ~18 min/epoch\n• GPU Memory: 172GB peak\n• Batch Size: 128", 
+             shape=note, fillcolor="lightyellow", style="filled",
+             fontname="Arial Bold"];
+    
+    // Main flow connections
+    input -> preprocess;
+    preprocess -> resnet_input [color="red", penwidth=2];
+    preprocess -> eff_input [color="green", penwidth=2];
+    preprocess -> vit_input [color="orange", penwidth=2];
+    preprocess -> swin_input [color="purple", penwidth=2];
+    
+    // Connect model outputs to fusion
+    resnet_output -> fusion [color="red", penwidth=2, label="ResNet152\nFeatures"];
+    eff_output -> fusion [color="green", penwidth=2, label="EfficientNet\nFeatures"];
+    vit_output -> fusion [color="orange", penwidth=2, label="ViT\nFeatures"];
+    swin_output -> fusion [color="purple", penwidth=2, label="Swin\nFeatures"];
+    
+    fusion -> final_output [penwidth=3, color="blue"];
+    
+    // Additional technical details
+    subgraph cluster_technical {
+        label="Technical Specifications";
+        style=dashed;
+        fontname="Arial Bold";
+        color="gray";
+        
+        tech_details [label="Hardware Optimization\n• AMD MI300X GPU (192GB VRAM)\n• ROCm 7.0 + PyTorch 2.4.1\n• BF16 Mixed Precision\n• channels_last Memory Format\n• Triton Kernel Optimization", 
+                      shape=folder, fillcolor="lightgray", style="filled"];
+    }
+    
+    // Position metrics and technical details
+    {rank=same; metrics; tech_details}
+}
