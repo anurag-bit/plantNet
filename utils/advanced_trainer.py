@@ -3,7 +3,12 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR, OneCycleLR
 from torch.utils.tensorboard import SummaryWriter
-from torch.cuda.amp import autocast, GradScaler
+from torch.cuda.amp import GradScaler
+# Use the new autocast API to avoid deprecation warnings
+try:
+    from torch.amp import autocast
+except ImportError:
+    from torch.cuda.amp import autocast
 import numpy as np
 import time
 import os
@@ -292,7 +297,7 @@ class AdvancedTrainer:
             
             # Mixed precision forward pass
             if self.mixed_precision in ['fp16', 'bf16']:
-                with autocast(enabled=True, dtype=self.autocast_dtype):
+                with autocast('cuda', enabled=True, dtype=self.autocast_dtype):
                     output = self.model(data)
                     if use_mixup or use_cutmix:
                         loss = self.mixup_loss(output, target_a, target_b, lam)
