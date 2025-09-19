@@ -15,9 +15,9 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Hardcoded credentials
-HF_TOKEN = "${HUGGINGFACE_TOKEN}"
-HF_USERNAME = "prof-freakenstein"
+# Environment variable configuration - much more secure!
+HF_TOKEN = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
+HF_USERNAME = os.getenv("HUGGINGFACE_USERNAME") or os.getenv("HF_USERNAME") or "prof-freakenstein"
 
 def install_requirements():
     """Install required packages."""
@@ -285,6 +285,19 @@ def simple_upload():
     """Simple upload process."""
     print("🌱 PlantNet - Simple HuggingFace Upload")
     print("=" * 50)
+    
+    # Validate credentials first
+    if not HF_TOKEN:
+        print("❌ HuggingFace token not found!")
+        print("\n🔧 To set up your HuggingFace token, run:")
+        print("   export HUGGINGFACE_TOKEN='your_token_here'")
+        print("   # or")
+        print("   export HF_TOKEN='your_token_here'")
+        print("\n💡 Get your token from: https://huggingface.co/settings/tokens")
+        return False
+    
+    if not HF_USERNAME:
+        print("⚠️ HuggingFace username not found! Using default: prof-freakenstein")
     
     # Install requirements
     if not install_requirements():
