@@ -6,6 +6,37 @@ Fully Automated HuggingFace Upload Script for PlantNet
 This script automatically detects, prepares, and uploads PlantNet models to HuggingFace Hub
 with complete automation including model cards, configurations, and repository management.
 
+🔧 SETUP INSTRUCTIONS:
+
+Before running this script, you need to set up your HuggingFace credentials:
+
+1. Get your token from: https://huggingface.co/settings/tokens
+   (Make sure to create a token with 'write' permissions!)
+
+2. Set environment variables:
+
+   Linux/macOS (current session):
+   export HUGGINGFACE_TOKEN='your_token_here'
+   export HUGGINGFACE_USERNAME='your_username_here'  # optional
+
+   Linux/macOS (permanent - add to ~/.bashrc or ~/.zshrc):
+   echo 'export HUGGINGFACE_TOKEN="your_token_here"' >> ~/.bashrc
+   echo 'export HUGGINGFACE_USERNAME="your_username_here"' >> ~/.bashrc
+   source ~/.bashrc
+
+   Windows Command Prompt:
+   set HUGGINGFACE_TOKEN=your_token_here
+   set HUGGINGFACE_USERNAME=your_username_here
+
+   Windows PowerShell (permanent):
+   [Environment]::SetEnvironmentVariable('HUGGINGFACE_TOKEN', 'your_token_here', 'User')
+   [Environment]::SetEnvironmentVariable('HUGGINGFACE_USERNAME', 'your_username_here', 'User')
+
+🚀 USAGE:
+   python automated_huggingface_upload.py
+   python automated_huggingface_upload.py --repo-name my-plant-model
+   python automated_huggingface_upload.py --private
+
 Features:
 - Automatic model detection and validation
 - Comprehensive model card generation
@@ -14,6 +45,7 @@ Features:
 - Metadata extraction and organization
 - Error handling and recovery
 - Progress tracking and logging
+- Secure environment variable-based authentication
 """
 
 import argparse
@@ -60,19 +92,49 @@ except ImportError:
     def get_class_names():
         return []
 
-# Hardcoded credentials and user info
-HF_TOKEN = "${HUGGINGFACE_TOKEN}"
-HF_USERNAME = "prof-freakenstein"
+# Environment variable configuration
+HF_TOKEN = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
+HF_USERNAME = os.getenv("HUGGINGFACE_USERNAME") or os.getenv("HF_USERNAME") or "prof-freakenstein"
 
 
 class AutomatedHuggingFaceUploader:
     """Fully automated HuggingFace model uploader."""
     
-    def __init__(self, token: str = HF_TOKEN, username: str = HF_USERNAME):
+    def __init__(self, token: str = None, username: str = None):
         """Initialize the automated uploader."""
-        self.token = token
-        self.username = username
-        self.api = HfApi(token=token)
+        # Get token from parameter, environment variable, or prompt user
+        self.token = token or HF_TOKEN
+        if not self.token:
+            print("❌ HuggingFace token not found!")
+            print("\n🔧 To set up your HuggingFace token, run one of these commands:")
+            print("\n📋 For current session (Linux/macOS):")
+            print("   export HUGGINGFACE_TOKEN='your_token_here'")
+            print("   # or")
+            print("   export HF_TOKEN='your_token_here'")
+            print("\n📋 For current session (Windows):")
+            print("   set HUGGINGFACE_TOKEN=your_token_here")
+            print("   # or")
+            print("   set HF_TOKEN=your_token_here")
+            print("\n📋 For permanent setup (Linux/macOS - add to ~/.bashrc or ~/.zshrc):")
+            print("   echo 'export HUGGINGFACE_TOKEN=\"your_token_here\"' >> ~/.bashrc")
+            print("   source ~/.bashrc")
+            print("\n📋 For permanent setup (Windows - PowerShell):")
+            print("   [Environment]::SetEnvironmentVariable('HUGGINGFACE_TOKEN', 'your_token_here', 'User')")
+            print("\n💡 Get your token from: https://huggingface.co/settings/tokens")
+            print("⚠️  Make sure to create a token with 'write' permissions!")
+            raise ValueError("HuggingFace token is required but not found in environment variables")
+        
+        # Get username from parameter, environment variable, or use default
+        self.username = username or HF_USERNAME
+        if not self.username:
+            print("❌ HuggingFace username not found!")
+            print("\n🔧 To set up your HuggingFace username, run:")
+            print("   export HUGGINGFACE_USERNAME='your_username_here'")
+            print("   # or")
+            print("   export HF_USERNAME='your_username_here'")
+            raise ValueError("HuggingFace username is required but not found")
+        
+        self.api = HfApi(token=self.token)
         
         # Login to HuggingFace
         try:
@@ -799,19 +861,16 @@ Examples:
                        help='Directories to search for models (default: auto-detect)')
     
     parser.add_argument('--token', type=str,
-                       help='HuggingFace token (default: uses hardcoded token)')
+                       help='HuggingFace token (default: reads from HUGGINGFACE_TOKEN or HF_TOKEN environment variable)')
     
     parser.add_argument('--username', type=str,
-                       help='HuggingFace username (default: uses hardcoded username)')
+                       help='HuggingFace username (default: reads from HUGGINGFACE_USERNAME or HF_USERNAME environment variable)')
     
     args = parser.parse_args()
     
     try:
-        # Initialize uploader
-        token = args.token or HF_TOKEN
-        username = args.username or HF_USERNAME
-        
-        uploader = AutomatedHuggingFaceUploader(token=token, username=username)
+        # Initialize uploader with environment variable support
+        uploader = AutomatedHuggingFaceUploader(token=args.token, username=args.username)
         
         # Run automated upload
         model_url = uploader.run_full_upload(
