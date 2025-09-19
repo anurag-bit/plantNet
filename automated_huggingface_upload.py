@@ -261,7 +261,24 @@ class AutomatedHuggingFaceUploader:
             try:
                 with open(metadata_file, 'r') as f:
                     existing_metadata = json.load(f)
-                    metadata.update(existing_metadata)
+                    
+                    # Handle different config file structures
+                    if 'data' in existing_metadata and 'batch_size' in existing_metadata['data']:
+                        metadata['training']['batch_size'] = existing_metadata['data']['batch_size']
+                    
+                    if 'training' in existing_metadata:
+                        # Merge training parameters carefully
+                        for key, value in existing_metadata['training'].items():
+                            metadata['training'][key] = value
+                    
+                    # Update other metadata fields
+                    for key, value in existing_metadata.items():
+                        if key not in ['data', 'training']:  # Don't overwrite structured sections
+                            if isinstance(value, dict) and key in metadata:
+                                metadata[key].update(value)
+                            else:
+                                metadata[key] = value
+                    
                     print(f"📄 Loaded metadata from: {metadata_file}")
                     break
             except Exception as e:
@@ -478,10 +495,10 @@ for pred in predictions:
 
 - **Framework**: PyTorch {metadata['framework_version']}
 - **Training Dataset**: PlantVillage (79,000+ images)
-- **Epochs**: {metadata['training']['epochs']}
-- **Batch Size**: {metadata['training']['batch_size']}
-- **Optimizer**: {metadata['training']['optimizer']}
-- **Learning Rate**: {metadata['training']['learning_rate']}
+- **Epochs**: {metadata['training'].get('epochs', 'N/A')}
+- **Batch Size**: {metadata['training'].get('batch_size', 'N/A')}
+- **Optimizer**: {metadata['training'].get('optimizer', 'N/A')}
+- **Learning Rate**: {metadata['training'].get('learning_rate', 'N/A')}
 - **Mixed Precision**: BFloat16 for efficient training
 - **Data Augmentation**: MixUp, CutMix, AutoAugment, RandomErasing
 
