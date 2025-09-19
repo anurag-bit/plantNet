@@ -307,7 +307,7 @@ class AdvancedTrainer:
             
             # Mixed precision forward pass
             if self.mixed_precision in ['fp16', 'bf16']:
-                with autocast('cuda', enabled=True, dtype=self.autocast_dtype):
+                with autocast(device_type='cuda', enabled=True, dtype=self.autocast_dtype):
                     output = self.model(data)
                     if use_mixup or use_cutmix:
                         loss = self.mixup_loss(output, target_a, target_b, lam)
@@ -379,7 +379,7 @@ class AdvancedTrainer:
                 data, target = data.to(self.device, non_blocking=True), target.to(self.device, non_blocking=True)
                 
                 if self.mixed_precision in ['fp16', 'bf16']:
-                    with autocast(dtype=self.autocast_dtype):
+                    with autocast(device_type='cuda', dtype=self.autocast_dtype):
                         output = self.model(data)
                         loss = self.criterion(output, target)
                 else:
