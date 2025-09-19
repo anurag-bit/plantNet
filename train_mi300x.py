@@ -27,6 +27,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+# Suppress PyTorch compilation warnings
+warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', module='torch.fx.experimental.symbolic_shapes')
+
 # Add project root to path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
@@ -94,7 +98,7 @@ class MI300XConfig:
         
         # Mixed precision and optimization
         self.mixed_precision = "bf16"  # BFloat16 for MI300X
-        self.compile_model = True
+        self.compile_model = False  # Disable for cleaner logs
         self.channels_last = True
         self.benchmark = True
         

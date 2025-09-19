@@ -177,7 +177,7 @@ class AdvancedTrainer:
         # Mixed precision setup
         self.mixed_precision = mixed_precision
         if mixed_precision in ['fp16', 'bf16']:
-            self.scaler = GradScaler('cuda')
+            self.scaler = GradScaler()
             self.autocast_dtype = torch.float16 if mixed_precision == 'fp16' else torch.bfloat16
         else:
             self.scaler = None
@@ -292,7 +292,7 @@ class AdvancedTrainer:
             
             # Mixed precision forward pass
             if self.mixed_precision in ['fp16', 'bf16']:
-                with autocast('cuda', dtype=self.autocast_dtype):
+                with autocast(enabled=True, dtype=self.autocast_dtype):
                     output = self.model(data)
                     if use_mixup or use_cutmix:
                         loss = self.mixup_loss(output, target_a, target_b, lam)
