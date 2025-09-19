@@ -89,12 +89,12 @@ class MI300XConfig:
         self.use_class_weights = True
         self.gradient_clip_norm = 1.0
         
-        # Advanced augmentations
-        self.mixup_alpha = 0.2
-        self.cutmix_alpha = 1.0
-        self.rand_augment = True
-        self.trivial_augment = True
-        self.random_erase = 0.25
+        # Advanced augmentations - Temporarily simplified for stability
+        self.mixup_alpha = 0.0  # Disable MixUp temporarily
+        self.cutmix_alpha = 0.0  # Disable CutMix temporarily
+        self.rand_augment = False
+        self.trivial_augment = False
+        self.random_erase = 0.0
         
         # Mixed precision and optimization
         self.mixed_precision = "bf16"  # BFloat16 for MI300X
