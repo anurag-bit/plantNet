@@ -3,7 +3,12 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR, OneCycleLR
 from torch.utils.tensorboard import SummaryWriter
-from torch.cuda.amp import GradScaler
+from torch.cuda.amp import GradScaler as CudaGradScaler
+# Use the new GradScaler API to avoid deprecation warnings
+try:
+    from torch.amp import GradScaler
+except ImportError:
+    from torch.cuda.amp import GradScaler
 # Use the new autocast API to avoid deprecation warnings
 try:
     from torch.amp import autocast
@@ -182,7 +187,12 @@ class AdvancedTrainer:
         # Mixed precision setup
         self.mixed_precision = mixed_precision
         if mixed_precision in ['fp16', 'bf16']:
-            self.scaler = GradScaler()
+            # Use new API format to avoid deprecation warnings
+            try:
+                self.scaler = GradScaler('cuda')
+            except TypeError:
+                # Fallback for older PyTorch versions
+                self.scaler = GradScaler()
             self.autocast_dtype = torch.float16 if mixed_precision == 'fp16' else torch.bfloat16
         else:
             self.scaler = None
