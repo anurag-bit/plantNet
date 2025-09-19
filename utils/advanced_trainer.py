@@ -93,6 +93,24 @@ class CosineWarmupScheduler:
                 lr = self.min_lr + (self.base_lrs[i] - self.min_lr) * \
                      (1 + math.cos(math.pi * current_epoch / cosine_epochs)) / 2
                 param_group['lr'] = lr
+    
+    def state_dict(self):
+        """Return the state of the scheduler."""
+        return {
+            'warmup_epochs': self.warmup_epochs,
+            'max_epochs': self.max_epochs,
+            'min_lr': self.min_lr,
+            'warmup_start_lr': self.warmup_start_lr,
+            'base_lrs': self.base_lrs
+        }
+    
+    def load_state_dict(self, state_dict):
+        """Load the scheduler state."""
+        self.warmup_epochs = state_dict['warmup_epochs']
+        self.max_epochs = state_dict['max_epochs']
+        self.min_lr = state_dict['min_lr']
+        self.warmup_start_lr = state_dict['warmup_start_lr']
+        self.base_lrs = state_dict['base_lrs']
 
 
 class MixUpLoss(nn.Module):
